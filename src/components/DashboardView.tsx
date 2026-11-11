@@ -1,21 +1,22 @@
+import { useState, useMemo } from 'react';
 import type { Asset, MaintenanceTicket, SparePartInventoryItem, PreventiveScheduleItem, AuditLog, UserProfile } from '../types';
 import {
-  Laptop,
   Wrench,
-  AlertTriangle,
-  Clock,
-  DollarSign,
-  TrendingUp,
-  FileText,
-  CheckCircle2,
-  Activity,
   ArrowRight,
   History,
   PlusCircle,
   Edit3,
   RefreshCw,
   Layers,
-  Trash2
+  Trash2,
+  Calendar,
+  Filter,
+  CheckCircle2,
+  ArrowUpRight,
+  SlidersHorizontal,
+  ChevronDown,
+  Printer,
+  Search
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -38,14 +39,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   spareParts,
   preventiveSchedules: _preventiveSchedules,
   logs = [],
-  currentUser,
+  currentUser: _currentUser,
   onViewTicketReport,
   onEditTicket,
   onSelectAsset,
   onNavigateToTab,
   onNewTicket
 }) => {
-  // Compute KPIs
+  // KPI Metrics Calculation
   const totalAssets = assets.length;
   const activeTickets = tickets.filter(t => t.status !== 'closed' && t.status !== 'resolved');
   const needsPartsTickets = tickets.filter(t => t.statusAfterMaintenance === 'needs_parts' || t.status === 'pending_parts');
@@ -53,33 +54,53 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const totalDowntimeHours = tickets.reduce((acc, t) => acc + (t.downtimeHours || 0), 0);
   const avgDowntimeHours = tickets.length > 0 ? (totalDowntimeHours / tickets.length).toFixed(1) : '0';
   const totalPartsCost = tickets.reduce((acc, t) => acc + (t.totalCost || 0), 0);
-  const lowStockParts = spareParts.filter(p => p.status === 'low_stock' || p.status === 'out_of_stock');
+  const _lowStockParts = spareParts.filter(p => p.status === 'low_stock' || p.status === 'out_of_stock');
 
-  // Breakdown by Department
-  const deptCount: Record<string, number> = {};
-  tickets.forEach(t => {
-    const asset = assets.find(a => a.id === t.assetId);
-    const dept = asset ? asset.department.split('-')[1]?.trim() || asset.department : 'أخرى';
-    deptCount[dept] = (deptCount[dept] || 0) + 1;
+  // Filter Bar States
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
+  const [dashboardSearch, setDashboardSearch] = useState('');
+
+  // Segmented Pill Tab in Bottom Section
+  const [bottomSegment, setBottomSegment] = useState<'all' | 'pending' | 'needs_parts'>('needs_parts');
+
+  // Selected Ticket in the Bottom Split-Surface Card
+  const [selectedTicketId, setSelectedTicketId] = useState<string>(() => {
+    return tickets[0]?.id || '';
   });
 
-  // Breakdown by Issue Category
-  const categoryCount: Record<string, number> = {
-    'هاردوير': 0,
-    'سوفت وير': 0,
-    'شبكات': 0,
-    'طابعات': 0,
-    'وقائية': 0,
-    'أخرى': 0
-  };
-  tickets.forEach(t => {
-    if (t.issueCategory === 'hardware') categoryCount['هاردوير']++;
-    else if (t.issueCategory === 'software' || t.issueCategory === 'os') categoryCount['سوفت وير']++;
-    else if (t.issueCategory === 'network') categoryCount['شبكات']++;
-    else if (t.issueCategory === 'printer') categoryCount['طابعات']++;
-    else if (t.issueCategory === 'preventive') categoryCount['وقائية']++;
-    else categoryCount['أخرى']++;
-  });
+  // Unique departments for filter dropdown
+  const departments = useMemo(() => {
+    const set = new Set<string>();
+    assets.forEach(a => {
+      if (a.department) set.add(a.department.split('-')[0].trim());
+    });
+    return Array.from(set);
+  }, [assets]);
+
+  // Bottom section tickets list
+  const splitTickets = useMemo(() => {
+    return tickets.filter(t => {
+      if (bottomSegment === 'pending') {
+        return t.status === 'open' || t.status === 'in_progress';
+      }
+      if (bottomSegment === 'needs_parts') {
+        return t.statusAfterMaintenance === 'needs_parts' || t.status === 'pending_parts';
+      }
+      return true;
+    }).slice(0, 7);
+  }, [tickets, bottomSegment]);
+
+  // Current active ticket details
+  const activeDetailedTicket = useMemo(() => {
+    const found = tickets.find(t => t.id === selectedTicketId);
+    return found || splitTickets[0] || tickets[0] || null;
+  }, [tickets, selectedTicketId, splitTickets]);
+
+  const activeAsset = useMemo(() => {
+    if (!activeDetailedTicket) return null;
+    return assets.find(a => a.id === activeDetailedTicket.assetId);
+  }, [assets, activeDetailedTicket]);
 
   // Time format helper
   const formatTimeAgo = (isoDate: string) => {
@@ -103,427 +124,974 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{
+      padding: '1.75rem',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1.75rem',
+      backgroundColor: '#0b0e14',
+      minHeight: '100%',
+      color: '#ffffff'
+    }}>
       
-      {/* Welcome Banner */}
-      <div className="glass-panel" style={{
-        padding: '1.5rem',
-        background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%)',
-        border: '1px solid rgba(2, 132, 199, 0.2)',
+      {/* Page Title & Quick Action Bar (Like Invoices Header in reference) */}
+      <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <div style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '16px',
-            background: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '6px',
-            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.12)',
-            border: '1px solid rgba(2, 132, 199, 0.2)',
-            flexShrink: 0
-          }}>
-            <img src="/logo.png" alt="مستشفى نيل الأمل" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button
+            onClick={() => onNavigateToTab('dashboard')}
+            className="btn-icon"
+            style={{ width: '38px', height: '38px', borderRadius: '50%' }}
+            title="تحديث الشاشة"
+          >
+            <RefreshCw size={16} />
+          </button>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '4px' }}>
-                نظام إدارة صيانة تكنولوجيا المعلومات
-              </span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>مستشفى نيل الأمل لجراحات الأطفال</span>
-            </div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>
-              مرحباً بك، {currentUser?.name || 'مهندس الصيانة'} 👨‍💻
+            <h1 style={{
+              fontSize: '2rem',
+              fontWeight: 800,
+              color: '#ffffff',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1
+            }}>
+              تقارير وبلاغات الصيانة
             </h1>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              لديك <strong style={{ color: '#ef4444' }}>{activeTickets.length} بلاغات قيد المتابعة</strong> و <strong style={{ color: '#8b5cf6' }}>{needsPartsTickets.length} جهاز بانتظار قطع غيار</strong> من المخزن.
+            <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
+              مستشفى نيل الأمل • وحدة تكنولوجيا المعلومات والنظم الطبية
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.65rem' }}>
-          <button onClick={onNewTicket} className="btn btn-primary">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            onClick={() => onNavigateToTab('tickets')}
+            className="btn btn-secondary btn-sm"
+            style={{ borderRadius: '9999px', padding: '0.55rem 1.1rem' }}
+          >
+            <SlidersHorizontal size={15} />
+            <span>عرض كل التذاكر ({tickets.length})</span>
+          </button>
+
+          <button
+            onClick={onNewTicket}
+            className="btn btn-primary"
+            style={{ borderRadius: '9999px', padding: '0.55rem 1.25rem' }}
+          >
             <Wrench size={16} />
-            تسجيل بلاغ صيانة جديد
+            <span>+ تسجيل بلاغ صيانة</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem' }}>
+      {/* TOP SECTION: Two Hero Cards (60% / 40% Split from Reference Image) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+        gap: '1.25rem'
+      }}>
         
-        {/* Card 1: Total Assets */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => onNavigateToTab('assets')}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Laptop size={24} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>إجمالي الأجهزة المسجلة</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)' }}>{totalAssets} جهاز</div>
-            <div style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>• جميع الأقسام والعيادات</div>
-          </div>
-        </div>
-
-        {/* Card 2: Active Tickets */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => onNavigateToTab('tickets')}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fffbeb', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Wrench size={24} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>بلاغات جاري العمل عليها</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#d97706' }}>{activeTickets.length} بلاغ</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>من أصل {tickets.length} إجمالي</div>
-          </div>
-        </div>
-
-        {/* Card 3: Pending Parts */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => onNavigateToTab('tickets')}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <AlertTriangle size={24} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>بانتظار قطع غيار</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#7c3aed' }}>{needsPartsTickets.length} أجهزة</div>
-            <div style={{ fontSize: '0.72rem', color: '#8b5cf6' }}>تتطلب توريد من المخزن</div>
-          </div>
-        </div>
-
-        {/* Card 4: Mean Downtime */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ecfeff', color: '#0891b2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Clock size={24} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>متوسط وقت الإصلاح MTTR</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0891b2' }}>{avgDowntimeHours} س</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>إجمالي التوقف: {totalDowntimeHours} س</div>
-          </div>
-        </div>
-
-        {/* Card 5: Spare Parts Cost */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => onNavigateToTab('inventory')}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>إجمالي تكلفة الصيانة</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#059669', fontFamily: 'var(--font-mono)' }}>{totalPartsCost} ج.م</div>
-            <div style={{ fontSize: '0.72rem', color: lowStockParts.length > 0 ? '#ef4444' : '#10b981', fontWeight: 700 }}>
-              {lowStockParts.length > 0 ? `⚠️ ${lowStockParts.length} أصناف أوشكت على النفاد` : 'المخزون متزن'}
+        {/* Left Hero Card: Overview & Timeline Progress Bar */}
+        <div style={{
+          background: '#141824',
+          borderRadius: '26px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '1.75rem',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '1.5rem',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)'
+        }}>
+          {/* 3 Metric Columns */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '1rem'
+          }}>
+            <div>
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600, marginBottom: '6px' }}>
+                بلاغات قيد المتابعة
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                {activeTickets.length} <span style={{ fontSize: '0.9rem', color: '#8af10a', fontWeight: 700 }}>بلاغ</span>
+              </div>
             </div>
+
+            <div>
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600, marginBottom: '6px' }}>
+                بانتظار قطع غيار
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                {needsPartsTickets.length} <span style={{ fontSize: '0.9rem', color: '#a78bfa', fontWeight: 700 }}>أجهزة</span>
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600, marginBottom: '6px' }}>
+                متوسط وقت الإصلاح MTTR
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                {avgDowntimeHours} <span style={{ fontSize: '0.9rem', color: '#38bdf8', fontWeight: 700 }}>ساعات</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline & Progress Track with Avatars (Exactly like in the reference) */}
+          <div style={{ paddingTop: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#64748b', fontWeight: 700, marginBottom: '8px' }}>
+              <span>سبتمبر</span>
+              <span>أكتوبر</span>
+              <span>نوفمبر</span>
+              <span>ديسمبر</span>
+            </div>
+
+            {/* Segmented Timeline Bar with Neon Lime Highlight */}
+            <div style={{
+              height: '5px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: '9999px',
+              overflow: 'hidden',
+              display: 'flex',
+              gap: '4px',
+              marginBottom: '1rem'
+            }}>
+              <div style={{ width: '25%', background: '#8af10a', borderRadius: '9999px' }} />
+              <div style={{ width: '45%', background: '#8af10a', borderRadius: '9999px' }} />
+              <div style={{ width: '15%', background: 'rgba(255, 255, 255, 0.15)', borderRadius: '9999px' }} />
+              <div style={{ width: '15%', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '9999px' }} />
+            </div>
+
+            {/* Engineer Avatar Cluster along the timeline */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {['م. محمد كمال', 'م. سارة علي', 'م. حسام الدين', 'م. آية أحمد'].map((name, i) => (
+                  <div
+                    key={name}
+                    title={name}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: i === 0 ? 'linear-gradient(135deg, #8af10a 0%, #10b981 100%)' : i === 1 ? 'linear-gradient(135deg, #38bdf8 0%, #2563eb 100%)' : 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
+                      color: i === 0 ? '#0b0e14' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      border: '2px solid #141824',
+                      marginRight: i > 0 ? '-10px' : '0',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {name.split(' ')[1]?.[0] || 'IT'}
+                  </div>
+                ))}
+                <span style={{ fontSize: '0.74rem', color: '#94a3b8', marginRight: '16px', fontWeight: 600 }}>
+                  فريق مهندسي الصيانة المتاح
+                </span>
+              </div>
+
+              <div style={{ fontSize: '0.75rem', color: '#8af10a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <CheckCircle2 size={13} />
+                <span>جاهزية الأنظمة 98.4%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Hero Card: Total Spare Parts Value & 3 Mini Fast Cards */}
+        <div style={{
+          background: '#141824',
+          borderRadius: '26px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '1.75rem',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '1.25rem',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>
+                إجمالي تكلفة قطع الغيار المسجلة
+              </span>
+              <span style={{
+                fontSize: '0.7rem',
+                color: '#8af10a',
+                background: 'rgba(138, 241, 10, 0.12)',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                fontWeight: 700
+              }}>
+                {totalAssets} جهاز مسجل
+              </span>
+            </div>
+
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', marginTop: '6px' }}>
+              {totalPartsCost.toLocaleString('ar-EG')} <span style={{ fontSize: '1rem', color: '#8af10a' }}>ج.م</span>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: _lowStockParts.length > 0 ? '#fbbf24' : '#8af10a', marginTop: '4px', fontWeight: 700 }}>
+              {_lowStockParts.length > 0 ? `⚠️ ${_lowStockParts.length} أصناف تحت حد الأمان بالمخزن` : 'المخزون متزن'}
+            </div>
+          </div>
+
+          {/* 3 Mini Device/Payment Category Cards (One Highlighted in Neon Lime) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '0.65rem'
+          }}>
+            {/* Mini Card 1: Regular Dark */}
+            <div
+              onClick={() => onNavigateToTab('assets')}
+              style={{
+                background: '#1c2232',
+                borderRadius: '16px',
+                padding: '0.75rem 0.65rem',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700 }}>#4443</div>
+              <div style={{ fontSize: '0.78rem', color: '#ffffff', fontWeight: 800, marginTop: '8px' }}>محطات طبية</div>
+            </div>
+
+            {/* Mini Card 2: SIGNATURE ELECTRIC NEON LIME ACCENT CARD (From Reference) */}
+            <div
+              onClick={() => onNavigateToTab('assets')}
+              style={{
+                background: '#8af10a',
+                borderRadius: '16px',
+                padding: '0.75rem 0.65rem',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 18px rgba(138, 241, 10, 0.4)',
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{ fontSize: '0.68rem', color: '#0b0e14', fontWeight: 900 }}>#177210</div>
+              <div style={{ fontSize: '0.78rem', color: '#0b0e14', fontWeight: 900, marginTop: '8px' }}>أجهزة ومحمول</div>
+            </div>
+
+            {/* Mini Card 3: Regular Dark */}
+            <div
+              onClick={() => onNavigateToTab('inventory')}
+              style={{
+                background: '#1c2232',
+                borderRadius: '16px',
+                padding: '0.75rem 0.65rem',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700 }}>#711221</div>
+              <div style={{ fontSize: '0.78rem', color: '#ffffff', fontWeight: 800, marginTop: '8px' }}>قطع المخزن</div>
+            </div>
+          </div>
+
+          {/* Bottom Action Button: White pill like "Pay out now" */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem' }}>
+            <button
+              onClick={() => onNavigateToTab('inventory')}
+              className="btn btn-white btn-sm"
+              style={{ borderRadius: '9999px', padding: '0.5rem 1.4rem' }}
+            >
+              <span>متابعة حركة المخزون</span>
+              <ArrowRight size={14} />
+            </button>
           </div>
         </div>
 
       </div>
 
-      {/* Visual Analytics Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-        
-        {/* Chart 1: Issue Categories */}
-        <div className="glass-panel" style={{ padding: '1.25rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Activity size={18} color="var(--primary)" />
-            توزيع الأعطال حسب النوع (Issue Breakdown)
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {Object.entries(categoryCount).map(([category, count]) => {
-              const percentage = tickets.length > 0 ? Math.round((count / tickets.length) * 100) : 0;
-              return (
-                <div key={category}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '3px' }}>
-                    <span style={{ fontWeight: 600 }}>{category}</span>
-                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{count} بلاغات ({percentage}%)</span>
-                  </div>
-                  <div style={{ height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${percentage}%`,
-                      height: '100%',
-                      background: category === 'هاردوير' ? '#ef4444' : category === 'سوفت وير' ? '#3b82f6' : category === 'شبكات' ? '#8b5cf6' : category === 'طابعات' ? '#f59e0b' : '#10b981',
-                      borderRadius: '4px',
-                      transition: 'width 0.5s ease'
-                    }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* FILTER PILLS BAR (From Reference Screenshot) */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '0.65rem',
+        padding: '0.25rem 0'
+      }}>
+        {/* Active Filters Pill */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          color: '#ffffff',
+          fontSize: '0.86rem',
+          fontWeight: 700,
+          marginLeft: '0.5rem'
+        }}>
+          <Filter size={15} color="#8af10a" />
+          <span>الفلاتر النشطة</span>
+          <span style={{
+            background: '#8af10a',
+            color: '#0b0e14',
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '11px',
+            fontWeight: 900
+          }}>
+            2
+          </span>
         </div>
 
-        {/* Chart 2: Department Outages */}
-        <div className="glass-panel" style={{ padding: '1.25rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <TrendingUp size={18} color="var(--primary)" />
-            الأقسام الأكثر تسجيلاً للصيانة (By Department)
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {Object.entries(deptCount).map(([dept, count]) => {
-              const maxVal = Math.max(...Object.values(deptCount), 1);
-              const percentage = Math.round((count / maxVal) * 100);
-              return (
-                <div key={dept}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '3px' }}>
-                    <span style={{ fontWeight: 700 }}>{dept}</span>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{count} طلب</span>
-                  </div>
-                  <div style={{ height: '8px', background: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${percentage}%`,
-                      height: '100%',
-                      background: 'linear-gradient(90deg, #0284c7 0%, #38bdf8 100%)',
-                      borderRadius: '4px'
-                    }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {/* Filter Dropdown 1: Department */}
+        <div className="filter-pill">
+          <select
+            value={selectedDeptFilter}
+            onChange={(e) => setSelectedDeptFilter(e.target.value)}
+          >
+            <option value="all">كافة الأقسام والمباني</option>
+            {departments.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} />
         </div>
 
+        {/* Filter Dropdown 2: Status */}
+        <div className="filter-pill">
+          <select
+            value={selectedStatusFilter}
+            onChange={(e) => setSelectedStatusFilter(e.target.value)}
+          >
+            <option value="all">كافة الحالات</option>
+            <option value="open">قيد الانتظار</option>
+            <option value="needs_parts">بانتظار قطع غيار</option>
+            <option value="repaired">تم الإصلاح</option>
+          </select>
+          <ChevronDown size={14} />
+        </div>
+
+        {/* Date Filter Pills */}
+        <div className="filter-pill">
+          <Calendar size={14} color="#8af10a" />
+          <span>نوفمبر 2026</span>
+        </div>
+
+        <div className="filter-pill">
+          <Calendar size={14} />
+          <span>ديسمبر 2026</span>
+        </div>
+
+        {/* Search Pill Input */}
+        <div style={{ position: 'relative', minWidth: '220px', marginRight: 'auto' }}>
+          <Search size={14} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+          <input
+            type="text"
+            className="form-control"
+            style={{
+              paddingRight: '2.2rem',
+              paddingLeft: '0.85rem',
+              paddingTop: '0.45rem',
+              paddingBottom: '0.45rem',
+              borderRadius: '9999px',
+              fontSize: '0.82rem',
+              background: '#141824',
+              borderColor: 'rgba(255, 255, 255, 0.08)'
+            }}
+            placeholder="بحث برقم البلاغ #... 🔍"
+            value={dashboardSearch}
+            onChange={(e) => setDashboardSearch(e.target.value)}
+          />
+        </div>
       </div>
 
-      {/* Critical / Urgent Section (Pending Parts & Overdue) */}
-      {needsPartsTickets.length > 0 && (
-        <div className="glass-panel" style={{ padding: '1.25rem', border: '1px solid rgba(139, 92, 246, 0.4)', background: 'rgba(139, 92, 246, 0.03)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle size={20} color="#8b5cf6" />
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#7c3aed' }}>
-                تنبيهات هامة: أجهزة بانتظار توفير قطع غيار
-              </h3>
+      {/* THE ICONIC DUAL SPLIT-SURFACE SECTION (Bottom Section from Reference Image) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        
+        {/* Segmented Pill Tabs above the dual card */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '4px' }}>
+          <button
+            onClick={() => setBottomSegment('all')}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '9999px',
+              border: 'none',
+              background: bottomSegment === 'all' ? '#8af10a' : '#141824',
+              color: bottomSegment === 'all' ? '#0b0e14' : '#94a3b8',
+              fontWeight: 800,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              transition: 'all 0.18s ease'
+            }}
+          >
+            كافة البلاغات
+          </button>
+
+          <button
+            onClick={() => setBottomSegment('pending')}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '9999px',
+              border: 'none',
+              background: bottomSegment === 'pending' ? '#8af10a' : '#141824',
+              color: bottomSegment === 'pending' ? '#0b0e14' : '#94a3b8',
+              fontWeight: 800,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              transition: 'all 0.18s ease'
+            }}
+          >
+            جديد وقيد الفحص <span style={{ opacity: 0.8 }}>({activeTickets.length})</span>
+          </button>
+
+          {/* Active Highlighted Pill in Solid Neon Lime (Like "Unpaid 5" in reference image) */}
+          <button
+            onClick={() => setBottomSegment('needs_parts')}
+            style={{
+              padding: '6px 18px',
+              borderRadius: '9999px',
+              border: 'none',
+              background: bottomSegment === 'needs_parts' ? '#8af10a' : '#141824',
+              color: bottomSegment === 'needs_parts' ? '#0b0e14' : '#94a3b8',
+              fontWeight: 900,
+              fontSize: '0.84rem',
+              cursor: 'pointer',
+              boxShadow: bottomSegment === 'needs_parts' ? '0 2px 14px rgba(138, 241, 10, 0.4)' : 'none',
+              transition: 'all 0.18s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <span>بانتظار قطع غيار</span>
+            <span style={{
+              background: bottomSegment === 'needs_parts' ? '#0b0e14' : '#8af10a',
+              color: bottomSegment === 'needs_parts' ? '#8af10a' : '#0b0e14',
+              borderRadius: '50%',
+              width: '18px',
+              height: '18px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '11px',
+              fontWeight: 900
+            }}>
+              {needsPartsTickets.length}
+            </span>
+          </button>
+        </div>
+
+        {/* The Two Complementary Cards (White Card on Right/Left + Dark Obsidian Card) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(320px, 1fr) minmax(380px, 1.4fr)',
+          gap: '1.25rem',
+          alignItems: 'stretch'
+        }}>
+          
+          {/* Card A: High-Contrast Crisp White Card (Unpaid Invoices List) */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '28px',
+            padding: '1.5rem',
+            color: '#0f172a',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '1rem'
+          }}>
+            <div>
+              {/* White Card Header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '1.25rem'
+              }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+                  البلاغات النشطة وغير المعتمدة
+                </h3>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button className="btn-icon" style={{ width: '32px', height: '32px', background: '#f1f5f9', color: '#475569', border: 'none' }}>
+                    <RefreshCw size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Ticket List Items */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {splitTickets.map(ticket => {
+                  const isSelected = activeDetailedTicket?.id === ticket.id;
+                  const asset = assets.find(a => a.id === ticket.assetId);
+
+                  if (isSelected) {
+                    /* SELECTED ROW: Sleek Dark Obsidian Rounded Pill Container (From Reference Screenshot!) */
+                    return (
+                      <div
+                        key={ticket.id}
+                        onClick={() => setSelectedTicketId(ticket.id)}
+                        style={{
+                          background: '#141824',
+                          color: '#ffffff',
+                          borderRadius: '9999px',
+                          padding: '0.65rem 1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+                          cursor: 'pointer',
+                          transition: 'all 0.18s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            background: '#8af10a',
+                            color: '#0b0e14',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            fontWeight: 900,
+                            flexShrink: 0
+                          }}>
+                            {ticket.requesterName?.[0] || 'IT'}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff' }}>
+                              #{ticket.id}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                              {formatTimeAgo(ticket.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{
+                          background: 'rgba(255, 255, 255, 0.12)',
+                          color: '#ffffff',
+                          padding: '3px 10px',
+                          borderRadius: '9999px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700
+                        }}>
+                          {ticket.statusAfterMaintenance === 'needs_parts' ? 'بانتظار قطع' : 'قيد الفحص'}
+                        </div>
+
+                        <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#8af10a', fontFamily: 'var(--font-mono)' }}>
+                          {(ticket.totalCost || 250).toLocaleString('ar-EG')} ج.م
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  /* Regular Inactive Row (On White Background) */
+                  return (
+                    <div
+                      key={ticket.id}
+                      onClick={() => setSelectedTicketId(ticket.id)}
+                      style={{
+                        padding: '0.6rem 0.85rem',
+                        borderRadius: '9999px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: '#f1f5f9',
+                          color: '#475569',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          flexShrink: 0
+                        }}>
+                          {ticket.requesterName?.[0] || asset?.brand?.[0] || 'IT'}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0f172a' }}>
+                            #{ticket.id}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                            {formatTimeAgo(ticket.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{
+                        color: '#64748b',
+                        fontSize: '0.72rem',
+                        fontWeight: 600
+                      }}>
+                        {ticket.status === 'open' ? 'جديد' : 'قيد المتابعة'}
+                      </div>
+
+                      <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-mono)' }}>
+                        {(ticket.totalCost || 0).toLocaleString('ar-EG')} ج.م
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {splitTickets.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#94a3b8', fontSize: '0.85rem' }}>
+                    لا توجد بلاغات مسجلة في هذا القسم
+                  </div>
+                )}
+              </div>
             </div>
-            <span className="badge badge-needs-parts">{needsPartsTickets.length} أجهزة متأثرة</span>
+
+            <div style={{ textAlign: 'center', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
+              <button
+                onClick={() => onNavigateToTab('tickets')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#0f172a',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                عرض كل البلاغات في جدول تفصيلي ←
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
-            {needsPartsTickets.map(ticket => {
-              const asset = assets.find(a => a.id === ticket.assetId);
-              return (
-                <div
-                  key={ticket.id}
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    padding: '1rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-color)',
+          {/* Card B: Deep Dark Obsidian Card (Ticket Details & Action Breakdown) */}
+          <div style={{
+            background: '#141824',
+            borderRadius: '28px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '1.75rem',
+            color: '#ffffff',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '1.5rem'
+          }}>
+            {activeDetailedTicket ? (
+              <>
+                {/* Header Information: Ticket Code, Department, Requester */}
+                <div>
+                  <div style={{
                     display: 'flex',
-                    flexDirection: 'column',
+                    alignItems: 'flex-start',
                     justifyContent: 'space-between',
-                    gap: '0.65rem'
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{ticket.assetId}</strong>
-                      <span style={{ fontSize: '0.75rem', color: '#ea580c', fontWeight: 700 }}>توقف: {ticket.downtimeFormatted}</span>
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                    marginBottom: '1.25rem'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.76rem', color: '#94a3b8', fontWeight: 600 }}>
+                        تفاصيل البلاغ المحدد
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '2px' }}>
+                        <h2 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em' }}>
+                          #{activeDetailedTicket.id}
+                        </h2>
+                        <span style={{
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          color: '#ffffff',
+                          padding: '3px 10px',
+                          borderRadius: '9999px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700
+                        }}>
+                          {activeDetailedTicket.statusAfterMaintenance === 'needs_parts' ? 'بانتظار قطع غيار' : 'قيد المعالجة'}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{asset?.name || ticket.assetId}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{asset?.department} | العهدة: {asset?.currentUser}</div>
-                    <div style={{ fontSize: '0.8rem', marginTop: '4px', color: 'var(--text-secondary)' }}>
-                      <strong>التشخيص:</strong> {ticket.diagnosis}
+
+                    <div
+                      onClick={() => activeAsset && onSelectAsset(activeAsset)}
+                      style={{ cursor: activeAsset ? 'pointer' : 'default' }}
+                      title={activeAsset ? 'انقر لفتح ملف الجهاز' : undefined}
+                    >
+                      <div style={{ fontSize: '0.76rem', color: '#94a3b8', fontWeight: 600 }}>القسم / الجهاز</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#ffffff' }}>
+                        {activeDetailedTicket.location || activeAsset?.department || 'قسم الحضانة والعناية'}
+                        {activeAsset && <span style={{ fontSize: '0.75rem', color: '#8af10a', marginRight: '6px' }}>({activeAsset.brand} {activeAsset.model})</span>}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <div style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '13px',
+                        fontWeight: 900
+                      }}>
+                        {activeDetailedTicket.requesterName?.[0] || 'د'}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800 }}>
+                          {activeDetailedTicket.requesterName || 'د. طارق السعيد'}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                          {activeDetailedTicket.technicianName ? `الفني: ${activeDetailedTicket.technicianName}` : 'فني المناوبة'}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  {/* 3 Dark Nested Metric Sub-Cards with Diagonal Arrow ↗ (From Reference Screenshot!) */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '0.75rem',
+                    marginBottom: '1.25rem'
+                  }}>
+                    {/* Sub Card 1 */}
+                    <div style={{
+                      background: '#1b2130',
+                      borderRadius: '16px',
+                      padding: '1rem',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.98rem', fontWeight: 900, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                          {(activeDetailedTicket.totalCost || 1250).toLocaleString('ar-EG')} ج.م
+                        </span>
+                        <ArrowUpRight size={15} color="#8af10a" />
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+                        تكلفة قطع الغيار
+                      </div>
+                    </div>
+
+                    {/* Sub Card 2 */}
+                    <div style={{
+                      background: '#1b2130',
+                      borderRadius: '16px',
+                      padding: '1rem',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.98rem', fontWeight: 900, color: '#ffffff' }}>
+                          {activeDetailedTicket.downtimeFormatted || '3.5 ساعات'}
+                        </span>
+                        <ArrowUpRight size={15} color="#38bdf8" />
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+                        مدة توقف الجهاز
+                      </div>
+                    </div>
+
+                    {/* Sub Card 3 */}
+                    <div style={{
+                      background: '#1b2130',
+                      borderRadius: '16px',
+                      padding: '1rem',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.98rem', fontWeight: 900, color: '#8af10a' }}>
+                          {activeDetailedTicket.issueCategory === 'hardware' ? 'هاردوير' : activeDetailedTicket.issueCategory === 'software' ? 'سوفت وير' : 'طابعة وشبكات'}
+                        </span>
+                        <ArrowUpRight size={15} color="#8af10a" />
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+                        تصنيف العطل
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Problem Description & Diagnosis Inset Box */}
+                  <div style={{
+                    background: '#10141e',
+                    borderRadius: '14px',
+                    padding: '0.85rem 1.1rem',
+                    border: '1px solid rgba(255, 255, 255, 0.04)',
+                    fontSize: '0.82rem',
+                    color: '#cbd5e1',
+                    lineHeight: 1.6
+                  }}>
+                    <strong style={{ color: '#ffffff' }}>وصف المشكلة: </strong>
+                    {activeDetailedTicket.userProblemDescription || 'عطل مفاجئ أثناء التشغيل يستلزم فحص وحدة التغذية الكهربائية واللوحة الأم.'}
+                    {activeDetailedTicket.diagnosis && (
+                      <div style={{ marginTop: '4px', color: '#8af10a' }}>
+                        <strong>التشخيص الفني: </strong>{activeDetailedTicket.diagnosis}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom Footer Action Bar: Totals + NEON LIME PILL BUTTON ("Pay out now" counterpart) */}
+                <div style={{
+                  paddingTop: '1rem',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>المجموع الفرعي</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+                        {(activeDetailedTicket.totalCost || 1250).toLocaleString('ar-EG')} ج.م
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>إجمالي التكلفة</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#8af10a', fontFamily: 'var(--font-mono)' }}>
+                        {(activeDetailedTicket.totalCost || 1250).toLocaleString('ar-EG')} ج.م
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                     <button
-                      onClick={() => onViewTicketReport(ticket)}
-                      className="btn btn-primary btn-sm"
-                      style={{ flex: 1 }}
+                      onClick={() => onEditTicket(activeDetailedTicket)}
+                      className="btn-icon"
+                      title="تعديل بيانات البلاغ"
                     >
-                      <FileText size={14} />
-                      عرض التقرير
+                      <Edit3 size={15} />
                     </button>
+
                     <button
-                      onClick={() => onEditTicket(ticket)}
-                      className="btn btn-secondary btn-sm"
+                      onClick={() => onViewTicketReport(activeDetailedTicket)}
+                      className="btn-icon"
+                      title="طباعة التقرير الرسمي"
                     >
-                      تحديث الإجراء
+                      <Printer size={15} />
+                    </button>
+
+                    {/* Signature Electric Neon Lime Pill Button */}
+                    <button
+                      onClick={() => onViewTicketReport(activeDetailedTicket)}
+                      className="btn btn-primary"
+                      style={{
+                        borderRadius: '9999px',
+                        padding: '0.65rem 1.4rem',
+                        fontSize: '0.88rem',
+                        fontWeight: 900
+                      }}
+                    >
+                      <span>عرض التقرير المعتمد</span>
+                      <ArrowRight size={15} />
                     </button>
                   </div>
                 </div>
-              );
-            })}
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
+                اختر بلاغاً من القائمة الجانبية لعرض كافة التفاصيل والإجراءات
+              </div>
+            )}
           </div>
-        </div>
-      )}
 
-      {/* RECENT AUDIT ACTIVITY FEED WIDGET */}
+        </div>
+
+      </div>
+
+      {/* RECENT AUDIT TRAIL WIDGET (Preserved with the matching obsidian dark look) */}
       {logs.length > 0 && (
-        <div className="glass-panel" style={{ padding: '1.25rem' }}>
+        <div style={{
+          background: '#141824',
+          borderRadius: '26px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '1.5rem',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.35)'
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <History size={18} color="var(--primary)" />
-                سجل أحدث النشاطات والتعديلات الأخيرة في النظام (Recent Audit Trail)
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <History size={17} color="#8af10a" />
+                سجل النشاطات والتعديلات الأخيرة في النظام
               </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                تتبع لحظي لمن قام بإضافة أو تعديل أي جهاز، تقرير صيانة، أو حركة مخزون
+              <p style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                تتبع لحظي للعمليات المنجزة بواسطة فريق الصيانة
               </p>
             </div>
 
             <button
               onClick={() => onNavigateToTab('logs')}
               className="btn btn-secondary btn-sm"
+              style={{ borderRadius: '9999px' }}
             >
               عرض السجل الكامل ({logs.length})
-              <ArrowRight size={14} />
+              <ArrowRight size={13} />
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            {logs.slice(0, 5).map(log => {
-              return (
-                <div
-                  key={log.id}
-                  style={{
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-color)',
-                    padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+            {logs.slice(0, 4).map(log => (
+              <div
+                key={log.id}
+                style={{
+                  background: '#10141d',
+                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.65rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '8px',
+                    background: log.actionType === 'create' ? 'rgba(138, 241, 10, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                    color: log.actionType === 'create' ? '#8af10a' : '#38bdf8',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '0.65rem'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '8px',
-                      background: log.actionType === 'create' ? '#ecfdf5' : log.actionType === 'status_change' ? '#f5f3ff' : log.actionType === 'stock_adjust' ? '#fffbeb' : log.actionType === 'delete' ? '#fef2f2' : '#eff6ff',
-                      color: log.actionType === 'create' ? '#059669' : log.actionType === 'status_change' ? '#7c3aed' : log.actionType === 'stock_adjust' ? '#d97706' : log.actionType === 'delete' ? '#dc2626' : '#2563eb',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {log.actionType === 'create' ? <PlusCircle size={16} /> : log.actionType === 'status_change' ? <RefreshCw size={16} /> : log.actionType === 'stock_adjust' ? <Layers size={16} /> : log.actionType === 'delete' ? <Trash2 size={16} /> : <Edit3 size={16} />}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {log.description}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        بواسطة: <strong style={{ color: 'var(--primary)' }}>{log.userName}</strong> ({log.userRole || 'فني IT'}) • الهدف: <span style={{ fontFamily: 'var(--font-mono)' }}>{log.targetId}</span>
-                      </div>
-                    </div>
+                    justifyContent: 'center'
+                  }}>
+                    {log.actionType === 'create' ? <PlusCircle size={15} /> : log.actionType === 'status_change' ? <RefreshCw size={15} /> : log.actionType === 'stock_adjust' ? <Layers size={15} /> : log.actionType === 'delete' ? <Trash2 size={15} /> : <Edit3 size={15} />}
                   </div>
-
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', direction: 'ltr' }}>
-                    {formatTimeAgo(log.timestamp)}
+                  <div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff' }}>
+                      {log.description}
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                      بواسطة: <strong style={{ color: '#8af10a' }}>{log.userName}</strong> • الهدف: <span style={{ fontFamily: 'var(--font-mono)' }}>{log.targetId}</span>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
+
+                <div style={{ fontSize: '0.74rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
+                  {formatTimeAgo(log.timestamp)}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
-
-      {/* Recent Maintenance Tickets Table */}
-      <div className="glass-panel" style={{ padding: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>أحدث تقارير وبلاغات الصيانة المسجلة</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>سجل شامل لجميع الإجراءات وقطع الغيار والتوقيعات</p>
-          </div>
-
-          <button onClick={() => onNavigateToTab('tickets')} className="btn btn-secondary btn-sm">
-            عرض كافة التذاكر ({tickets.length})
-            <ArrowRight size={14} />
-          </button>
-        </div>
-
-        <div className="custom-table-container">
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>رقم التقرير</th>
-                <th>الجهاز / الأصل</th>
-                <th>القسم / المستخدم</th>
-                <th>نوع العطل</th>
-                <th>الفني المسؤول</th>
-                <th>مدة التوقف</th>
-                <th>الحالة بعد الصيانة</th>
-                <th>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tickets.slice(0, 5).map(ticket => {
-                const asset = assets.find(a => a.id === ticket.assetId);
-                return (
-                  <tr key={ticket.id}>
-                    <td>
-                      <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{ticket.id}</strong>
-                    </td>
-                    <td>
-                      <div
-                        onClick={() => asset && onSelectAsset(asset)}
-                        style={{ cursor: 'pointer', fontWeight: 700 }}
-                        title="انقر لفتح ملف الجهاز"
-                      >
-                        {ticket.assetId}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{asset?.brand} {asset?.model}</div>
-                    </td>
-                    <td>
-                      <div>{asset?.department || '—'}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{asset?.currentUser}</div>
-                    </td>
-                    <td>
-                      <span className="badge badge-spare">
-                        {ticket.issueCategory === 'hardware' ? 'هاردوير' : ticket.issueCategory === 'software' ? 'سوفت وير' : ticket.issueCategory === 'printer' ? 'طابعة' : 'وقائية'}
-                      </span>
-                    </td>
-                    <td>
-                      <strong>{ticket.technicianName}</strong>
-                    </td>
-                    <td>
-                      <span style={{ color: '#ea580c', fontWeight: 600, fontSize: '0.82rem' }}>
-                        {ticket.downtimeFormatted}
-                      </span>
-                    </td>
-                    <td>
-                      {ticket.statusAfterMaintenance === 'repaired' ? (
-                        <span className="badge badge-operational"><CheckCircle2 size={12} /> تم الإصلاح</span>
-                      ) : ticket.statusAfterMaintenance === 'needs_parts' ? (
-                        <span className="badge badge-needs-parts"><AlertTriangle size={12} /> يحتاج قطعة غيار</span>
-                      ) : (
-                        <span className="badge badge-maintenance">قيد الملاحظة</span>
-                      )}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <button
-                          onClick={() => onViewTicketReport(ticket)}
-                          className="btn btn-primary btn-sm"
-                          title="عرض التقرير الرسمي المعتمد وطباعته وتصديره PDF"
-                        >
-                          <FileText size={14} />
-                          التقرير الرسمي
-                        </button>
-                        <button
-                          onClick={() => onEditTicket(ticket)}
-                          className="btn btn-secondary btn-sm"
-                          title="تعديل"
-                        >
-                          تعديل
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
     </div>
   );

@@ -8,7 +8,8 @@ import {
   History,
   ShieldCheck,
   UserCheck,
-  LogOut
+  LogOut,
+  Sparkles
 } from 'lucide-react';
 import type { UserAccount, UserProfile, PermissionKey } from '../types';
 
@@ -54,14 +55,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'tickets' as NavTab,
       label: 'تقارير وتذاكر الصيانة',
       icon: FileText,
-      badge: ticketCount,
+      badge: ticketCount > 0 ? ticketCount : null,
       requiredPerm: 'tickets' as PermissionKey
     },
     {
       id: 'assets' as NavTab,
       label: 'سجل الأجهزة والعهد',
       icon: Laptop,
-      badge: assetCount,
+      badge: assetCount > 0 ? assetCount : null,
       requiredPerm: 'assets' as PermissionKey
     },
     {
@@ -96,51 +97,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   ];
 
-  // Filter nav items based on user permissions
   const permittedNavItems = allNavItems.filter(item => {
     if (isAdmin) return true;
     return userPerms.includes(item.requiredPerm);
   });
 
   return (
-    <aside className="sidebar-wrapper">
+    <aside className="sidebar-wrapper" style={{
+      background: '#0e121a',
+      borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      position: 'sticky',
+      top: 0
+    }}>
       {/* Brand Header */}
       <div style={{
-        padding: '1.25rem 1.25rem 1rem 1.25rem',
-        borderBottom: '1px solid var(--border-color)',
+        padding: '1.25rem 1.25rem 1.15rem 1.25rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         alignItems: 'center',
         gap: '0.85rem'
       }}>
         <div style={{
-          width: '46px',
-          height: '46px',
-          borderRadius: '12px',
-          background: '#ffffff',
+          width: '44px',
+          height: '44px',
+          borderRadius: '14px',
+          background: 'linear-gradient(135deg, #161c28 0%, #1e2638 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)',
-          border: '1px solid var(--border-color)',
-          padding: '3px',
+          boxShadow: '0 0 16px rgba(138, 241, 10, 0.25)',
+          border: '1.5px solid rgba(138, 241, 10, 0.4)',
           flexShrink: 0
         }}>
-          <img src="/logo.png" alt="شعار مستشفى نيل الأمل" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <Sparkles size={22} color="#8af10a" />
         </div>
         <div style={{ minWidth: 0 }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <h2 style={{ fontSize: '1.02rem', fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             مستشفى نيل الأمل
           </h2>
-          <p style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>
+          <p style={{ fontSize: '0.72rem', color: '#8af10a', fontWeight: 700, letterSpacing: '0.02em' }}>
             قسم تكنولوجيا المعلومات IT
           </p>
         </div>
       </div>
 
       {/* Navigation List */}
-      <div style={{ padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1, overflowY: 'auto' }}>
-        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', padding: '0 0.5rem 0.4rem 0.5rem' }}>
-          الأقسام المصرح بها
+      <div style={{ padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1, overflowY: 'auto' }}>
+        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', padding: '0 0.6rem 0.4rem 0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          القائمة الرئيسية
         </div>
 
         {permittedNavItems.map(item => {
@@ -154,26 +161,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '0.7rem 0.85rem',
-                borderRadius: 'var(--radius-sm)',
-                border: 'none',
-                background: isActive ? 'var(--primary-light)' : 'transparent',
-                color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                fontWeight: isActive ? 700 : 500,
+                padding: '0.75rem 0.95rem',
+                borderRadius: '14px',
+                border: isActive ? '1px solid rgba(138, 241, 10, 0.35)' : '1px solid transparent',
+                background: isActive ? 'rgba(138, 241, 10, 0.12)' : 'transparent',
+                color: isActive ? '#ffffff' : '#94a3b8',
+                fontWeight: isActive ? 800 : 600,
                 fontSize: '0.88rem',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
                 textAlign: 'right',
-                width: '100%'
+                width: '100%',
+                position: 'relative'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <Icon size={18} color={isActive ? 'var(--primary)' : 'currentColor'} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Icon size={19} color={isActive ? '#8af10a' : 'currentColor'} />
                 <span>{item.label}</span>
               </div>
 
               {item.badge !== null && (
-                <span className={`badge ${item.badgeVariant || (isActive ? 'badge-spare' : '')}`} style={{ fontSize: '0.7rem', padding: '0.15rem 0.45rem' }}>
+                <span
+                  className={`badge ${item.badgeVariant || (isActive ? 'badge-operational' : '')}`}
+                  style={{
+                    fontSize: '0.7rem',
+                    padding: '0.15rem 0.5rem',
+                    background: isActive ? '#8af10a' : undefined,
+                    color: isActive ? '#0b0e14' : undefined,
+                    fontWeight: 800
+                  }}
+                >
                   {item.badge}
                 </span>
               )}
@@ -182,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
 
         {permittedNavItems.length === 0 && (
-          <div style={{ padding: '1.5rem 0.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+          <div style={{ padding: '1.5rem 0.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>
             لا توجد أقسام مفعلة لحسابك حالياً
           </div>
         )}
@@ -190,32 +207,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* User Profile & Logout Footer */}
       <div style={{
-        padding: '0.85rem 1rem',
-        borderTop: '1px solid var(--border-color)',
-        background: 'var(--bg-card-hover)',
+        padding: '0.9rem 1rem',
+        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+        background: '#121620',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.65rem'
+        gap: '0.75rem'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{
-            width: '36px',
-            height: '36px',
+            width: '38px',
+            height: '38px',
             borderRadius: '50%',
-            background: isAdmin ? '#f5f3ff' : '#e0f2fe',
-            color: isAdmin ? '#7c3aed' : '#0284c7',
+            background: isAdmin ? 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' : 'linear-gradient(135deg, #8af10a 0%, #10b981 100%)',
+            color: isAdmin ? '#ffffff' : '#0b0e14',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flexShrink: 0
+            flexShrink: 0,
+            boxShadow: '0 0 12px rgba(138, 241, 10, 0.25)'
           }}>
             {isAdmin ? <ShieldCheck size={18} /> : <UserCheck size={18} />}
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {currentUser?.name || 'مستخدم النظام'}
             </div>
-            <div style={{ fontSize: '0.7rem', color: isAdmin ? '#7c3aed' : 'var(--primary)', fontWeight: 700 }}>
+            <div style={{ fontSize: '0.72rem', color: '#8af10a', fontWeight: 700 }}>
               {isAdmin ? 'مدير النظام (Admin)' : (currentUser?.role || 'فني صيانة')}
             </div>
           </div>
@@ -225,7 +243,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onLogout}
             className="btn btn-secondary btn-sm"
-            style={{ width: '100%', justifyContent: 'center', color: '#ef4444', padding: '0.35rem' }}
+            style={{ width: '100%', justifyContent: 'center', color: '#f43f5e', padding: '0.4rem', borderRadius: '10px' }}
             title="تسجيل الخروج من الحساب"
           >
             <LogOut size={14} />

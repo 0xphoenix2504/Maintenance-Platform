@@ -33,9 +33,9 @@ import { BatchQRPrintModal } from './components/BatchQRPrintModal';
 import { DataManagementModal } from './components/DataManagementModal';
 
 export const App: React.FC = () => {
-  // Theme state
+  // Theme state - Default to the sleek dark obsidian theme
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('noh_theme') as 'light' | 'dark') || 'light';
+    return (localStorage.getItem('noh_theme') as 'light' | 'dark') || 'dark';
   });
 
   useEffect(() => {
@@ -81,6 +81,10 @@ export const App: React.FC = () => {
     setAuthenticatedUser(user);
     setAccounts(storageService.getAccounts());
     setLogs(storageService.getLogs());
+    setTickets(storageService.getTickets());
+    setAssets(storageService.getAssets());
+    setSpareParts(storageService.getSpareParts());
+    setPreventiveSchedules(storageService.getPreventiveSchedules());
 
     // Switch to first allowed tab
     if (user.role === 'admin' || user.permissions.includes('dashboard')) {
@@ -94,6 +98,8 @@ export const App: React.FC = () => {
     storageService.logout();
     setAuthenticatedUser(null);
     setLogs(storageService.getLogs());
+    setTickets(storageService.getTickets());
+    setAssets(storageService.getAssets());
   };
 
   const handleRefreshUser = (updatedUser: UserAccount) => {
@@ -310,6 +316,10 @@ export const App: React.FC = () => {
         onLogout={handleLogout}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onTicketCreated={() => {
+          setTickets(storageService.getTickets());
+          setLogs(storageService.getLogs());
+        }}
       />
     );
   }
@@ -365,6 +375,9 @@ export const App: React.FC = () => {
           tickets={tickets}
           currentUser={authenticatedUser}
           onLogout={handleLogout}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          permittedTabs={permittedTabs}
         />
 
         {/* View Routing with Permission Guards */}

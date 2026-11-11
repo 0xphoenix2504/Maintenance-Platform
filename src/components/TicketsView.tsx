@@ -7,7 +7,10 @@ import {
   Edit,
   Trash2,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Clock,
+  Filter,
+  ChevronDown
 } from 'lucide-react';
 
 interface TicketsViewProps {
@@ -40,49 +43,87 @@ export const TicketsView: React.FC<TicketsViewProps> = ({
       ticket.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.technicianName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.userProblemDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      Boolean(ticket.title && ticket.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      Boolean(ticket.location && ticket.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      Boolean(ticket.floor && ticket.floor.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      Boolean(ticket.problemType && ticket.problemType.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      Boolean(ticket.requesterName && ticket.requesterName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (asset && (asset.currentUser.toLowerCase().includes(searchTerm.toLowerCase()) || asset.department.toLowerCase().includes(searchTerm.toLowerCase())));
 
     const matchesCategory = categoryFilter === 'all' || ticket.issueCategory === categoryFilter;
-    const matchesStatus = statusFilter === 'all' || ticket.statusAfterMaintenance === statusFilter;
+    const matchesStatus = 
+      statusFilter === 'all' || 
+      (statusFilter === 'open' ? ticket.status === 'open' : ticket.statusAfterMaintenance === statusFilter);
 
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div style={{
+      padding: '1.75rem',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1.5rem',
+      backgroundColor: '#0b0e14',
+      minHeight: '100%',
+      color: '#ffffff'
+    }}>
       
       {/* Header & Controls */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 800 }}>سجل تذاكر وتقارير الصيانة</h1>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em' }}>
+            سجل تذاكر وتقارير الصيانة
+          </h1>
+          <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
             إدارة كافة بلاغات الصيانة الطارئة والوقائية وتصدير التقارير المعتمدة
           </p>
         </div>
 
-        <button onClick={onNewTicket} className="btn btn-primary">
+        <button
+          onClick={onNewTicket}
+          className="btn btn-primary"
+          style={{ borderRadius: '9999px', padding: '0.6rem 1.4rem' }}
+        >
           <Plus size={16} />
-          تسجيل بلاغ صيانة جديد
+          <span>تسجيل بلاغ صيانة جديد</span>
         </button>
       </div>
 
-      {/* Filters Bar */}
-      <div className="glass-panel" style={{ padding: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+      {/* Modern Filter Pills Bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        flexWrap: 'wrap',
+        background: '#141824',
+        padding: '0.85rem 1.25rem',
+        borderRadius: '20px',
+        border: '1px solid rgba(255, 255, 255, 0.08)'
+      }}>
+        {/* Search Input */}
+        <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input
             type="text"
             className="form-control"
-            style={{ paddingRight: '2.4rem' }}
-            placeholder="بحث برقم التقرير، كود الجهاز، الفني، أو الموظف..."
+            style={{
+              paddingRight: '2.4rem',
+              borderRadius: '9999px',
+              background: '#10141d',
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+              fontSize: '0.84rem'
+            }}
+            placeholder="بحث برقم التقرير، كود الجهاز، الفني، أو الموظف... 🔍"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div style={{ minWidth: '160px' }}>
+        {/* Category Filter Pill */}
+        <div className="filter-pill">
+          <Filter size={14} color="#8af10a" />
           <select
-            className="form-control"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
@@ -93,106 +134,143 @@ export const TicketsView: React.FC<TicketsViewProps> = ({
             <option value="printer">طابعات (Printers)</option>
             <option value="preventive">صيانة وقائية</option>
           </select>
+          <ChevronDown size={14} />
         </div>
 
-        <div style={{ minWidth: '170px' }}>
+        {/* Status Filter Pill */}
+        <div className="filter-pill">
           <select
-            className="form-control"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="all">كافة الحالات</option>
+            <option value="open">جديد / بانتظار الإجراء</option>
             <option value="repaired">تم الإصلاح بنجاح</option>
             <option value="needs_parts">يحتاج قطعة غيار</option>
             <option value="under_observation">قيد الملاحظة</option>
             <option value="unrepairable">تالف</option>
           </select>
+          <ChevronDown size={14} />
+        </div>
+
+        <div style={{ fontSize: '0.78rem', color: '#8af10a', fontWeight: 800, marginRight: 'auto' }}>
+          {filteredTickets.length} بلاغات مطابقة
         </div>
       </div>
 
-      {/* Tickets Table */}
-      <div className="glass-panel" style={{ padding: '1.25rem' }}>
-        <div className="custom-table-container">
+      {/* Tickets Table Card */}
+      <div style={{
+        background: '#141824',
+        borderRadius: '26px',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        padding: '1.25rem',
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)'
+      }}>
+        <div className="custom-table-container" style={{ background: '#10141d', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
           <table className="custom-table">
             <thead>
-              <tr>
-                <th>رقم التقرير</th>
-                <th>كود الجهاز</th>
-                <th>الموقع / القسم</th>
-                <th>المستخدم / العهدة</th>
-                <th>نوع العطل</th>
-                <th>الفني المسؤول</th>
-                <th>وقت البلاغ</th>
-                <th>مدة التوقف</th>
-                <th>الحالة بعد الصيانة</th>
-                <th>الإجراءات</th>
+              <tr style={{ background: '#161c28' }}>
+                <th style={{ color: '#94a3b8' }}>رقم التقرير</th>
+                <th style={{ color: '#94a3b8' }}>كود الجهاز</th>
+                <th style={{ color: '#94a3b8' }}>الموقع / القسم</th>
+                <th style={{ color: '#94a3b8' }}>المستخدم / مقدم البلاغ</th>
+                <th style={{ color: '#94a3b8' }}>نوع العطل</th>
+                <th style={{ color: '#94a3b8' }}>الفني المسؤول</th>
+                <th style={{ color: '#94a3b8' }}>وقت البلاغ</th>
+                <th style={{ color: '#94a3b8' }}>مدة التوقف</th>
+                <th style={{ color: '#94a3b8' }}>الحالة</th>
+                <th style={{ color: '#94a3b8' }}>الإجراءات</th>
               </tr>
             </thead>
             <tbody>
               {filteredTickets.map(ticket => {
                 const asset = assets.find(a => a.id === ticket.assetId);
                 return (
-                  <tr key={ticket.id}>
+                  <tr key={ticket.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
                     <td>
-                      <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{ticket.id}</strong>
+                      <strong style={{ fontFamily: 'var(--font-mono)', color: '#8af10a', fontSize: '0.92rem' }}>
+                        #{ticket.id}
+                      </strong>
                     </td>
                     <td>
                       <div
                         onClick={() => asset && onSelectAsset(asset)}
-                        style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text-primary)' }}
-                        title="انقر لفتح ملف وسجل الجهاز"
+                        style={{ cursor: asset ? 'pointer' : 'default', fontWeight: 700, color: '#ffffff' }}
+                        title={asset ? 'انقر لفتح ملف وسجل الجهاز' : undefined}
                       >
-                        {ticket.assetId}
+                        {ticket.assetId === 'GENERAL-REQ' ? (
+                          <span className="badge" style={{ background: 'rgba(167, 139, 250, 0.15)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.3)' }}>
+                            طلب عام ({ticket.problemType || 'مستخدم'})
+                          </span>
+                        ) : (
+                          ticket.assetId
+                        )}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{asset?.brand} {asset?.model}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        {asset ? `${asset.brand} ${asset.model}` : (ticket.title || 'بلاغ موجه')}
+                      </div>
                     </td>
                     <td>
-                      <div style={{ fontSize: '0.85rem' }}>{asset?.department || '—'}</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>
+                        {ticket.location ? `${ticket.location} - ${ticket.floor || ''}` : (asset?.department || '—')}
+                      </div>
                     </td>
                     <td>
-                      <div style={{ fontSize: '0.85rem' }}>{asset?.currentUser || '—'}</div>
+                      <div style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
+                        {ticket.requesterName || asset?.currentUser || '—'}
+                      </div>
                     </td>
                     <td>
-                      <span className="badge badge-spare">
+                      <span className="badge" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
                         {ticket.issueCategory === 'hardware' ? 'هاردوير' : ticket.issueCategory === 'software' ? 'سوفت وير' : ticket.issueCategory === 'printer' ? 'طابعة' : 'وقائية'}
                       </span>
                     </td>
                     <td>
-                      <strong style={{ fontSize: '0.85rem' }}>{ticket.technicianName}</strong>
+                      <strong style={{ fontSize: '0.85rem', color: '#ffffff' }}>{ticket.technicianName}</strong>
                     </td>
                     <td>
-                      <div style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)' }}>{ticket.reportDateTime}</div>
+                      <div style={{ fontSize: '0.76rem', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>{ticket.reportDateTime}</div>
                     </td>
                     <td>
-                      <span style={{ color: '#ea580c', fontWeight: 600, fontSize: '0.82rem' }}>
+                      <span style={{ color: '#fb923c', fontWeight: 700, fontSize: '0.82rem' }}>
                         {ticket.downtimeFormatted}
                       </span>
                     </td>
                     <td>
-                      {ticket.statusAfterMaintenance === 'repaired' ? (
+                      {ticket.status === 'open' ? (
+                        <span className="badge" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                          <Clock size={12} /> جديد (بانتظار الإجراء)
+                        </span>
+                      ) : ticket.status === 'closed' ? (
+                        <span className="badge" style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#94a3b8', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
+                          <CheckCircle2 size={12} /> مغلق ومعتمد
+                        </span>
+                      ) : ticket.statusAfterMaintenance === 'repaired' || ticket.status === 'resolved' ? (
                         <span className="badge badge-operational"><CheckCircle2 size={12} /> تم الإصلاح</span>
-                      ) : ticket.statusAfterMaintenance === 'needs_parts' ? (
+                      ) : ticket.statusAfterMaintenance === 'needs_parts' || ticket.status === 'pending_parts' ? (
                         <span className="badge badge-needs-parts"><AlertTriangle size={12} /> يحتاج قطعة غيار</span>
                       ) : (
                         <span className="badge badge-maintenance">قيد الملاحظة</span>
                       )}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <div style={{ display: 'flex', gap: '0.45rem' }}>
                         <button
                           onClick={() => onViewReport(ticket)}
                           className="btn btn-primary btn-sm"
+                          style={{ padding: '0.35rem 0.85rem', borderRadius: '9999px' }}
                           title="عرض التقرير الرسمي المعتمد وطباعته وتصديره PDF"
                         >
-                          <FileText size={14} />
-                          التقرير الرسمي
+                          <FileText size={13} />
+                          <span>التقرير</span>
                         </button>
                         <button
                           onClick={() => onEditTicket(ticket)}
-                          className="btn btn-secondary btn-sm"
+                          className="btn-icon"
+                          style={{ width: '30px', height: '30px' }}
                           title="تعديل"
                         >
-                          <Edit size={14} />
+                          <Edit size={13} />
                         </button>
                         <button
                           onClick={() => {
@@ -200,10 +278,11 @@ export const TicketsView: React.FC<TicketsViewProps> = ({
                               onDeleteTicket(ticket.id);
                             }
                           }}
-                          className="btn btn-danger btn-sm"
+                          className="btn-icon"
+                          style={{ width: '30px', height: '30px', color: '#f43f5e' }}
                           title="حذف"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -212,7 +291,7 @@ export const TicketsView: React.FC<TicketsViewProps> = ({
               })}
               {filteredTickets.length === 0 && (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '3.5rem', color: '#64748b' }}>
                     لا توجد بلاغات تطابق معايير البحث المحددة.
                   </td>
                 </tr>

@@ -80,11 +80,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
     }
 
     const result = storageService.register({
-      name: regName,
-      username: regUsername,
-      email: regEmail,
-      department: regDepartment,
-      jobTitle: regJobTitle,
+      name: regName.trim(),
+      username: regUsername.trim(),
+      email: regEmail.trim(),
+      department: regDepartment.trim(),
+      jobTitle: regJobTitle.trim(),
       password: regPassword
     });
 
@@ -123,50 +123,58 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
       justifyContent: 'center',
       padding: '1.5rem',
       position: 'relative',
-      background: 'var(--bg-primary)'
+      background: '#0b0e14',
+      color: '#ffffff'
     }}>
       {/* Background Ambient Glow */}
       <div className="bg-ambient" />
 
-      <div style={{ width: '100%', maxWidth: '460px', position: 'relative', zIndex: 10 }}>
+      <div style={{ width: '100%', maxWidth: '480px', position: 'relative', zIndex: 10 }}>
         
         {/* Hospital Branding Header */}
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div style={{
-            width: '90px',
-            height: '90px',
-            borderRadius: '20px',
-            background: '#ffffff',
+            width: '74px',
+            height: '74px',
+            borderRadius: '24px',
+            background: 'linear-gradient(135deg, #161c28 0%, #1e2638 100%)',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 8px 24px rgba(2, 132, 199, 0.15)',
-            border: '1px solid rgba(2, 132, 199, 0.2)',
-            padding: '8px',
-            marginBottom: '0.85rem'
+            boxShadow: '0 0 25px rgba(138, 241, 10, 0.3)',
+            border: '2px solid rgba(138, 241, 10, 0.5)',
+            padding: '10px',
+            marginBottom: '1rem'
           }}>
-            <img src="/logo.png" alt="مستشفى نيل الأمل" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <Sparkles size={36} color="#8af10a" />
           </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
             مستشفى نيل الأمل
           </h1>
-          <p style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 700 }}>
-            منصة إدارة وصيانة تكنولوجيا المعلومات IT
+          <p style={{ fontSize: '0.85rem', color: '#8af10a', fontWeight: 700, letterSpacing: '0.02em' }}>
+            منظومة إدارة وصيانة تكنولوجيا المعلومات IT
           </p>
         </div>
 
         {/* Auth Card Container */}
-        <div className="glass-panel" style={{ padding: '1.75rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xl)' }}>
+        <div style={{
+          background: '#141824',
+          borderRadius: '28px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '2rem',
+          boxShadow: '0 16px 45px rgba(0, 0, 0, 0.6)'
+        }}>
           
-          {/* Mode Switcher Tabs */}
+          {/* Mode Switcher Tabs (Segmented Pill) */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: '0.5rem',
-            background: 'var(--bg-card-hover)',
-            padding: '4px',
-            borderRadius: 'var(--radius-sm)',
-            marginBottom: '1.25rem'
+            background: '#10141d',
+            padding: '5px',
+            borderRadius: '9999px',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            marginBottom: '1.5rem'
           }}>
             <button
               type="button"
@@ -176,16 +184,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
                 setSuccessMsg(null);
               }}
               style={{
-                padding: '0.6rem 0.5rem',
+                padding: '0.65rem 0.5rem',
                 border: 'none',
-                borderRadius: '6px',
-                background: mode === 'login' ? 'var(--bg-secondary)' : 'transparent',
-                color: mode === 'login' ? 'var(--primary)' : 'var(--text-secondary)',
-                fontWeight: mode === 'login' ? 800 : 600,
+                borderRadius: '9999px',
+                background: mode === 'login' ? '#8af10a' : 'transparent',
+                color: mode === 'login' ? '#0b0e14' : '#94a3b8',
+                fontWeight: 900,
                 fontSize: '0.88rem',
                 cursor: 'pointer',
-                boxShadow: mode === 'login' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.2s ease',
+                boxShadow: mode === 'login' ? '0 2px 10px rgba(138, 241, 10, 0.35)' : 'none',
+                transition: 'all 0.18s ease',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -204,16 +212,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
                 setSuccessMsg(null);
               }}
               style={{
-                padding: '0.6rem 0.5rem',
+                padding: '0.65rem 0.5rem',
                 border: 'none',
-                borderRadius: '6px',
-                background: mode === 'register' ? 'var(--bg-secondary)' : 'transparent',
-                color: mode === 'register' ? 'var(--primary)' : 'var(--text-secondary)',
-                fontWeight: mode === 'register' ? 800 : 600,
+                borderRadius: '9999px',
+                background: mode === 'register' ? '#8af10a' : 'transparent',
+                color: mode === 'register' ? '#0b0e14' : '#94a3b8',
+                fontWeight: 900,
                 fontSize: '0.88rem',
                 cursor: 'pointer',
-                boxShadow: mode === 'register' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.2s ease',
+                boxShadow: mode === 'register' ? '0 2px 10px rgba(138, 241, 10, 0.35)' : 'none',
+                transition: 'all 0.18s ease',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -229,16 +237,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
           {errorMsg && (
             <div style={{
               padding: '0.75rem 1rem',
-              background: '#fef2f2',
-              color: '#dc2626',
+              background: 'rgba(239, 68, 68, 0.15)',
+              color: '#f87171',
               border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-sm)',
+              borderRadius: '14px',
               fontSize: '0.82rem',
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              marginBottom: '1rem'
+              marginBottom: '1.25rem'
             }}>
               <AlertCircle size={17} style={{ flexShrink: 0 }} />
               <span>{errorMsg}</span>
@@ -248,16 +256,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
           {successMsg && (
             <div style={{
               padding: '0.75rem 1rem',
-              background: '#ecfdf5',
-              color: '#059669',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: 'var(--radius-sm)',
+              background: 'rgba(138, 241, 10, 0.15)',
+              color: '#8af10a',
+              border: '1px solid rgba(138, 241, 10, 0.3)',
+              borderRadius: '14px',
               fontSize: '0.82rem',
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              marginBottom: '1rem'
+              marginBottom: '1.25rem'
             }}>
               <Sparkles size={17} style={{ flexShrink: 0 }} />
               <span>{successMsg}</span>
@@ -266,16 +274,22 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
 
           {/* TAB 1: LOGIN FORM */}
           {mode === 'login' ? (
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontWeight: 700 }}>اسم المستخدم أو البريد الإلكتروني</label>
+                <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>اسم المستخدم أو البريد الإلكتروني</label>
                 <div style={{ position: 'relative' }}>
-                  <User size={17} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <User size={17} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
                   <input
                     type="text"
                     className="form-control"
-                    style={{ paddingRight: '2.4rem' }}
-                    placeholder="مثال: admin أو it.admin@noh.local"
+                    style={{
+                      paddingRight: '2.6rem',
+                      borderRadius: '14px',
+                      background: '#10141d',
+                      borderColor: 'rgba(255, 255, 255, 0.08)',
+                      color: '#ffffff'
+                    }}
+                    placeholder="مثال: admin أو mohamed"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     required
@@ -284,13 +298,20 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontWeight: 700 }}>كلمة المرور</label>
+                <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>كلمة المرور</label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={17} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <Lock size={17} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
                   <input
                     type={showLoginPassword ? 'text' : 'password'}
                     className="form-control form-control-mono"
-                    style={{ paddingRight: '2.4rem', paddingLeft: '2.4rem' }}
+                    style={{
+                      paddingRight: '2.6rem',
+                      paddingLeft: '2.6rem',
+                      borderRadius: '14px',
+                      background: '#10141d',
+                      borderColor: 'rgba(255, 255, 255, 0.08)',
+                      color: '#ffffff'
+                    }}
                     placeholder="••••••••"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -301,12 +322,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
                     onClick={() => setShowLoginPassword(!showLoginPassword)}
                     style={{
                       position: 'absolute',
-                      left: '10px',
+                      left: '12px',
                       top: '50%',
                       transform: 'translateY(-50%)',
                       background: 'none',
                       border: 'none',
-                      color: 'var(--text-muted)',
+                      color: '#64748b',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center'
@@ -319,8 +340,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
 
               <button
                 type="submit"
-                className="btn btn-primary btn-lg"
-                style={{ width: '100%', marginTop: '0.5rem', justifyContent: 'center' }}
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  marginTop: '0.5rem',
+                  justifyContent: 'center',
+                  padding: '0.8rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.98rem'
+                }}
               >
                 <span>دخول إلى المنصة</span>
                 <ArrowLeft size={18} />
@@ -330,13 +358,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
             /* TAB 2: REGISTER FORM */
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontWeight: 700 }}>الاسم الكامل (مع اللقب) *</label>
+                <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>الاسم الكامل (مع اللقب) *</label>
                 <div style={{ position: 'relative' }}>
-                  <User size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <User size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
                   <input
                     type="text"
                     className="form-control"
-                    style={{ paddingRight: '2.4rem' }}
+                    style={{ paddingRight: '2.5rem', borderRadius: '12px', background: '#10141d', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                     placeholder="مثال: ENG أحمد فتحي"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
@@ -347,10 +375,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 700 }}>اسم المستخدم *</label>
+                  <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>اسم المستخدم *</label>
                   <input
                     type="text"
                     className="form-control form-control-mono"
+                    style={{ borderRadius: '12px', background: '#10141d', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                     placeholder="ahmed_it"
                     value={regUsername}
                     onChange={(e) => setRegUsername(e.target.value)}
@@ -359,10 +388,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 700 }}>البريد الإلكتروني</label>
+                  <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>البريد الإلكتروني</label>
                   <input
                     type="email"
                     className="form-control"
+                    style={{ borderRadius: '12px', background: '#10141d', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                     placeholder="ahmed@noh.local"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
@@ -372,10 +402,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 700 }}>القسم / الموقع</label>
+                  <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>القسم / الموقع</label>
                   <input
                     type="text"
                     className="form-control"
+                    style={{ borderRadius: '12px', background: '#10141d', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                     placeholder="قسم IT"
                     value={regDepartment}
                     onChange={(e) => setRegDepartment(e.target.value)}
@@ -384,10 +415,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 700 }}>المسمى الوظيفي</label>
+                  <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>المسمى الوظيفي</label>
                   <input
                     type="text"
                     className="form-control"
+                    style={{ borderRadius: '12px', background: '#10141d', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                     placeholder="مهندس صيانة"
                     value={regJobTitle}
                     onChange={(e) => setRegJobTitle(e.target.value)}
@@ -399,11 +431,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="form-label" style={{ fontWeight: 700 }}>كلمة المرور *</label>
+                    <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>كلمة المرور *</label>
                     <button
                       type="button"
                       onClick={() => setShowRegPassword(!showRegPassword)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.7rem' }}
+                      style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.72rem' }}
                     >
                       {showRegPassword ? 'إخفاء' : 'إظهار'}
                     </button>
@@ -411,6 +443,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
                   <input
                     type={showRegPassword ? 'text' : 'password'}
                     className="form-control form-control-mono"
+                    style={{ borderRadius: '12px', background: '#10141d', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                     placeholder="••••••••"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
@@ -419,10 +452,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 700 }}>تأكيد المرور *</label>
+                  <label className="form-label" style={{ fontWeight: 700, color: '#94a3b8' }}>تأكيد المرور *</label>
                   <input
                     type={showRegPassword ? 'text' : 'password'}
                     className="form-control form-control-mono"
+                    style={{ borderRadius: '12px', background: '#10141d', borderColor: 'rgba(255, 255, 255, 0.08)', color: '#ffffff' }}
                     placeholder="••••••••"
                     value={regConfirmPassword}
                     onChange={(e) => setRegConfirmPassword(e.target.value)}
@@ -431,14 +465,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
                 </div>
               </div>
 
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-card-hover)', padding: '0.5rem 0.75rem', borderRadius: '6px' }}>
-                ℹ️ <strong>ملاحظة الأمان:</strong> عند إنشاء الحساب، سيكون الحساب فارغاً بانتظار قيام مدير النظام باعتماده وتحديد الصلاحيات المخصصة لك.
+              <div style={{ fontSize: '0.74rem', color: '#94a3b8', background: '#10141d', padding: '0.6rem 0.85rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+                ℹ️ <strong>ملاحظة الأمان:</strong> عند إنشاء الحساب، سيكون الحساب بانتظار قيام مدير النظام باعتماده وتحديد الصلاحيات.
               </div>
 
               <button
                 type="submit"
-                className="btn btn-primary btn-lg"
-                style={{ width: '100%', marginTop: '0.35rem', justifyContent: 'center' }}
+                className="btn btn-primary"
+                style={{ width: '100%', marginTop: '0.35rem', justifyContent: 'center', padding: '0.8rem', borderRadius: '9999px', fontSize: '0.98rem' }}
               >
                 <span>إنشاء الحساب</span>
                 <UserPlus size={18} />
@@ -447,62 +481,79 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
           )}
 
           {/* Quick Demo Test Logins */}
-          <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '0.65rem', textAlign: 'center' }}>
-              ⚡ حسابات تجريبية سريعة (Click to Login):
+          <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.25rem' }}>
+            <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#64748b', marginBottom: '0.75rem', textAlign: 'center', letterSpacing: '0.04em' }}>
+              ⚡ حسابات تجريبية سريعة بنقرة واحدة:
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <button
                 type="button"
                 onClick={() => handleQuickDemoLogin('admin')}
-                className="btn btn-secondary btn-sm"
-                style={{ justifyContent: 'space-between', padding: '0.45rem 0.75rem' }}
+                style={{
+                  background: '#10141d',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '9999px',
+                  padding: '0.55rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  transition: 'all 0.18s ease'
+                }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <ShieldCheck size={15} color="#0284c7" />
-                  <strong>مدير النظام (Admin)</strong>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={16} color="#8af10a" />
+                  <strong style={{ fontSize: '0.84rem' }}>مدير النظام (Admin)</strong>
                 </div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>admin / admin</span>
+                <span style={{ fontSize: '0.72rem', color: '#8af10a', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>admin / admin</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleQuickDemoLogin('tech')}
-                className="btn btn-secondary btn-sm"
-                style={{ justifyContent: 'space-between', padding: '0.45rem 0.75rem' }}
+                style={{
+                  background: '#10141d',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '9999px',
+                  padding: '0.55rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  transition: 'all 0.18s ease'
+                }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Briefcase size={15} color="#10b981" />
-                  <span>فني صيانة معتمد</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Briefcase size={16} color="#38bdf8" />
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700 }}>فني صيانة معتمد</span>
                 </div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>mohamed / 123</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('pending')}
-                className="btn btn-secondary btn-sm"
-                style={{ justifyContent: 'space-between', padding: '0.45rem 0.75rem' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <User size={15} color="#f59e0b" />
-                  <span>حساب جديد معلق (Zero Permissions)</span>
-                </div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>sara / 123</span>
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>mohamed / 123</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleQuickDemoLogin('enduser')}
-                className="btn btn-secondary btn-sm"
-                style={{ justifyContent: 'space-between', padding: '0.45rem 0.75rem' }}
+                style={{
+                  background: '#10141d',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '9999px',
+                  padding: '0.55rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  transition: 'all 0.18s ease'
+                }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CheckCircle2 size={15} color="#8b5cf6" />
-                  <span>مستخدم نهائي (End User - تقديم ومتابعة)</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle2 size={16} color="#a78bfa" />
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700 }}>بوابة الموظف (End User)</span>
                 </div>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>enduser / 123</span>
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>enduser / 123</span>
               </button>
             </div>
           </div>
@@ -510,7 +561,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess }) => {
         </div>
 
         {/* Footer info */}
-        <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.75rem', color: '#64748b' }}>
           مستشفى نيل الأمل لجراحات الأطفال © 2026 • قسم تكنولوجيا المعلومات
         </div>
 

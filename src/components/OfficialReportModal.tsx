@@ -87,13 +87,13 @@ export const OfficialReportModal: React.FC<OfficialReportModalProps> = ({ ticket
 
   // Resolved Asset info
   const assetData = asset || {
-    id: ticket.assetId,
-    type: 'Laptop',
-    brand: 'Dell',
-    model: 'Latitude E5470',
-    serialNumber: 'SN-DEMO-001',
-    department: 'قسم الأطفال - الدور الرابع',
-    currentUser: 'مسؤول العهدة / التمريض'
+    id: ticket.assetId === 'GENERAL-REQ' ? 'بلاغ عام (General Request)' : ticket.assetId,
+    type: (ticket.problemType as any) || 'أجهزة ومعدات',
+    brand: ticket.problemType ? `خدمة (${ticket.problemType})` : 'طلب عام',
+    model: ticket.title || 'بلاغ موجه من المستخدم',
+    serialNumber: ticket.requesterName ? `مقدم البلاغ: ${ticket.requesterName}` : 'طلب بدون سيريال مسبق',
+    department: ticket.location ? `${ticket.location} - ${ticket.floor || ''}` : 'قسم الأطفال - مستشفى نيل الأمل',
+    currentUser: ticket.requesterName || 'مستخدم المستشفى'
   };
 
   const sparePartsListText = ticket.sparePartsUsed && ticket.sparePartsUsed.length > 0

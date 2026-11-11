@@ -1,6 +1,27 @@
 import React from 'react';
 import type { Asset, MaintenanceTicket, UserAccount, UserProfile, PermissionKey } from '../types';
-import { QrCode, Plus, Search, Sun, Moon, Bell, Laptop, UserCheck, ShieldCheck, LogOut, Printer, Database } from 'lucide-react';
+import type { NavTab } from './Sidebar';
+import { 
+  QrCode, 
+  Plus, 
+  Search, 
+  Sun, 
+  Moon, 
+  Bell, 
+  Laptop, 
+  UserCheck, 
+  ShieldCheck, 
+  LogOut, 
+  Printer, 
+  Database,
+  LayoutDashboard,
+  FileText,
+  Package,
+  CalendarCheck,
+  History,
+  ShieldAlert,
+  Sparkles
+} from 'lucide-react';
 
 interface HeaderProps {
   theme: 'light' | 'dark';
@@ -16,6 +37,9 @@ interface HeaderProps {
   tickets: MaintenanceTicket[];
   currentUser?: UserAccount | UserProfile;
   onLogout?: () => void;
+  activeTab?: NavTab;
+  onTabChange?: (tab: NavTab) => void;
+  permittedTabs?: NavTab[];
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -30,7 +54,10 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   tickets,
   currentUser,
-  onLogout
+  onLogout,
+  activeTab = 'dashboard',
+  onTabChange,
+  permittedTabs
 }) => {
   const pendingPartsCount = tickets.filter(t => t.statusAfterMaintenance === 'needs_parts' || t.status === 'pending_parts').length;
   const userPerms: PermissionKey[] = currentUser?.permissions || [];
@@ -39,48 +66,142 @@ export const Header: React.FC<HeaderProps> = ({
   const canCreateTicket = isAdmin || userPerms.includes('tickets');
   const canCreateAsset = isAdmin || userPerms.includes('assets');
 
+  const navItems: { id: NavTab; label: string; icon: React.FC<{ size?: number; color?: string; className?: string }> }[] = [
+    { id: 'dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
+    { id: 'tickets', label: 'تذاكر الصيانة', icon: FileText },
+    { id: 'assets', label: 'سجل الأجهزة', icon: Laptop },
+    { id: 'inventory', label: 'قطع الغيار', icon: Package },
+    { id: 'preventive', label: 'الوقائية', icon: CalendarCheck },
+    { id: 'logs', label: 'النشاطات', icon: History }
+  ];
+
+  if (isAdmin) {
+    navItems.push({ id: 'user_management', label: 'المستخدمين', icon: ShieldAlert });
+  }
+
+  const allowedNavItems = navItems.filter(item => {
+    if (!permittedTabs) return true;
+    return permittedTabs.includes(item.id);
+  });
+
   return (
-    <header className="glass-panel" style={{
-      borderRadius: 0,
-      borderTop: 'none',
-      borderLeft: 'none',
-      borderRight: 'none',
-      padding: '0.85rem 1.5rem',
+    <header style={{
+      background: 'rgba(11, 14, 20, 0.92)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+      padding: '0.75rem 1.75rem',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: '1rem',
+      gap: '1.25rem',
       position: 'sticky',
       top: 0,
-      zIndex: 30
+      zIndex: 35,
+      transition: 'all 0.25s ease'
     }}>
-      {/* Search and Quick Filters */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, maxWidth: '460px' }}>
-        <div style={{ position: 'relative', width: '100%' }}>
-          <Search size={17} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+      {/* Brand & Logo Section */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
+        <div style={{
+          width: '38px',
+          height: '38px',
+          borderRadius: '12px',
+          background: 'linear-gradient(135deg, #161c28 0%, #1e2638 100%)',
+          border: '1px solid rgba(138, 241, 10, 0.35)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 0 15px rgba(138, 241, 10, 0.2)',
+          padding: '4px'
+        }}>
+          <Sparkles size={20} color="#8af10a" />
+        </div>
+        <div className="hidden-mobile">
+          <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+            مستشفى نيل الأمل
+          </div>
+          <div style={{ fontSize: '0.7rem', color: '#8af10a', fontWeight: 700, letterSpacing: '0.02em' }}>
+            NOH Maintenance Platform
+          </div>
+        </div>
+      </div>
+
+      {/* Signature Floating Segmented Pill Capsule Navigation (From the reference design) */}
+      {onTabChange && allowedNavItems.length > 0 && (
+        <nav className="pill-nav-capsule" style={{ display: 'flex', flexShrink: 0 }}>
+          {allowedNavItems.map(item => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onTabChange(item.id)}
+                className={`pill-nav-item ${isActive ? 'active' : ''}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '9999px',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: isActive ? 800 : 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+                  background: isActive ? '#8af10a' : 'transparent',
+                  color: isActive ? '#0b0e14' : '#334155',
+                  boxShadow: isActive ? '0 2px 10px rgba(138, 241, 10, 0.35)' : 'none'
+                }}
+              >
+                {isActive && (
+                  <span style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: '#0b0e14',
+                    display: 'inline-block'
+                  }} />
+                )}
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      {/* Search & Actions Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
+        
+        {/* Search Pill Input */}
+        <div style={{ position: 'relative', width: '220px' }}>
+          <Search size={15} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
             className="form-control"
-            style={{ paddingRight: '2.4rem', borderRadius: 'var(--radius-full)' }}
-            placeholder="بحث بالكود، السيريال، اسم الموظف، أو القسم..."
+            style={{
+              paddingRight: '2.2rem',
+              paddingLeft: '0.75rem',
+              paddingTop: '0.45rem',
+              paddingBottom: '0.45rem',
+              borderRadius: '9999px',
+              fontSize: '0.82rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+              color: '#ffffff'
+            }}
+            placeholder="بحث سريع... 🔍"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-        
         {/* QR Scanner Trigger */}
         {canCreateAsset && (
           <button
             onClick={onOpenQRScanner}
-            className="btn btn-secondary btn-sm"
+            className="btn-icon"
             title="مسح كود QR أو باركود الجهاز"
           >
             <QrCode size={16} />
-            <span>مسح QR</span>
           </button>
         )}
 
@@ -88,23 +209,21 @@ export const Header: React.FC<HeaderProps> = ({
         {canCreateAsset && onOpenBatchQR && (
           <button
             onClick={onOpenBatchQR}
-            className="btn btn-secondary btn-sm"
-            title="طباعة ملصقات الباركود المجمعة على ورق A4"
+            className="btn-icon"
+            title="طباعة ملصقات الباركود المجمعة"
           >
             <Printer size={16} />
-            <span>ملصقات QR</span>
           </button>
         )}
 
-        {/* Data Backup & Restore Modal Trigger */}
+        {/* Data Backup & Restore Trigger */}
         {isAdmin && onOpenDataManagement && (
           <button
             onClick={onOpenDataManagement}
-            className="btn btn-secondary btn-sm"
-            title="إدارة البيانات والنسخ الاحتياطي (JSON / CSV)"
+            className="btn-icon"
+            title="النسخ الاحتياطي وإدارة البيانات"
           >
             <Database size={16} />
-            <span>النسخ الاحتياطي</span>
           </button>
         )}
 
@@ -113,14 +232,15 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onNewAsset}
             className="btn btn-secondary btn-sm"
+            style={{ borderRadius: '9999px', padding: '0.45rem 0.95rem' }}
             title="إضافة جهاز جديد إلى السجل"
           >
-            <Laptop size={16} />
-            <span>إضافة جهاز</span>
+            <Laptop size={15} />
+            <span className="hidden-mobile">إضافة جهاز</span>
           </button>
         )}
 
-        {/* New Ticket Button */}
+        {/* New Ticket Quick Pill Button */}
         {canCreateTicket && (
           <button
             onClick={onNewTicket}
@@ -128,56 +248,24 @@ export const Header: React.FC<HeaderProps> = ({
             style={{ padding: '0.45rem 1rem' }}
           >
             <Plus size={16} />
-            <span>تسجيل بلاغ صيانة</span>
+            <span>تسجيل بلاغ</span>
           </button>
         )}
 
-        {/* Logged in User Pill */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'var(--bg-card-hover)',
-            border: '1px solid var(--border-color)',
-            padding: '0.35rem 0.75rem',
-            borderRadius: 'var(--radius-full)'
-          }}
-        >
-          <div style={{
-            width: '24px',
-            height: '24px',
-            borderRadius: '50%',
-            background: isAdmin ? '#7c3aed' : '#0284c7',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '11px',
-            fontWeight: 800
-          }}>
-            {isAdmin ? <ShieldCheck size={13} /> : <UserCheck size={13} />}
-          </div>
-          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {currentUser?.name || 'مستخدم'}
-          </span>
-        </div>
-
-        {/* Notifications indicator */}
+        {/* Notifications Icon with Badge */}
         <div style={{ position: 'relative' }}>
           <button
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '0.5rem', borderRadius: '50%', position: 'relative' }}
+            className="btn-icon"
             title="التنبيهات والأجهزة المعلقة"
           >
-            <Bell size={17} />
+            <Bell size={16} />
             {pendingPartsCount > 0 && (
               <span style={{
                 position: 'absolute',
                 top: '-2px',
                 right: '-2px',
-                background: '#ef4444',
-                color: 'white',
+                background: '#8af10a',
+                color: '#0b0e14',
                 fontSize: '10px',
                 fontWeight: 900,
                 width: '18px',
@@ -186,7 +274,7 @@ export const Header: React.FC<HeaderProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '2px solid var(--bg-secondary)'
+                boxShadow: '0 0 10px rgba(138, 241, 10, 0.6)'
               }}>
                 {pendingPartsCount}
               </span>
@@ -194,22 +282,54 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Dark/Light Mode Toggle */}
+        {/* Theme Toggle Button */}
         <button
           onClick={onToggleTheme}
-          className="btn btn-secondary btn-sm"
-          style={{ padding: '0.5rem', borderRadius: '50%' }}
+          className="btn-icon"
           title={theme === 'dark' ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى الوضع الليلي'}
         >
-          {theme === 'dark' ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="#0284c7" />}
+          {theme === 'dark' ? <Sun size={16} color="#fbbf24" /> : <Moon size={16} color="#8af10a" />}
         </button>
+
+        {/* Logged in User Avatar & Info Pill */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '0.3rem 0.75rem 0.3rem 0.35rem',
+            borderRadius: '9999px',
+            marginRight: '4px'
+          }}
+        >
+          <div style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '50%',
+            background: isAdmin ? 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)' : 'linear-gradient(135deg, #8af10a 0%, #10b981 100%)',
+            color: isAdmin ? '#ffffff' : '#0b0e14',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px',
+            fontWeight: 800,
+            boxShadow: '0 0 10px rgba(138, 241, 10, 0.25)'
+          }}>
+            {isAdmin ? <ShieldCheck size={14} /> : <UserCheck size={14} />}
+          </div>
+          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#ffffff', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {currentUser?.name || 'مستخدم'}
+          </span>
+        </div>
 
         {/* Logout Quick Button */}
         {onLogout && (
           <button
             onClick={onLogout}
-            className="btn btn-secondary btn-sm"
-            style={{ padding: '0.5rem', borderRadius: '50%', color: '#ef4444' }}
+            className="btn-icon"
+            style={{ color: '#f43f5e' }}
             title="تسجيل الخروج"
           >
             <LogOut size={16} />

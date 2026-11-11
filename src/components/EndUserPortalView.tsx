@@ -43,13 +43,15 @@ interface EndUserPortalViewProps {
   onLogout: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  onTicketCreated?: () => void;
 }
 
 export const EndUserPortalView: React.FC<EndUserPortalViewProps> = ({
   currentUser,
   onLogout,
   theme,
-  onToggleTheme
+  onToggleTheme,
+  onTicketCreated
 }) => {
   const [activeTab, setActiveTab] = useState<'new_ticket' | 'my_tickets'>('new_ticket');
   const [myTickets, setMyTickets] = useState<EndUserTicketView[]>([]);
@@ -189,6 +191,9 @@ export const EndUserPortalView: React.FC<EndUserPortalViewProps> = ({
 
         setSubmitSuccessMsg(`تم إرسال بلاغك بنجاح برقم: ${res.ticket.id}`);
         refreshTickets();
+        if (onTicketCreated) {
+          onTicketCreated();
+        }
 
         // Reset form
         setProblemType('');
